@@ -359,37 +359,58 @@
   const REPO_NAME  = 'nutrisnap';
   const RAW_URL = `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/log.json`;
 
-  // Macros & micros recalculated from USDA FoodData Central, per 1-of-6 servings
-  // Full batch: 2,717 cal · 231g protein · 173g carbs · 134g fat
-  const SMOOTHIE = {
-    id: 'default-smoothie',
-    name: 'Morning Protein Smoothie',
-    calories: 453,
-    protein: 38,
-    carbs: 29,
-    fat: 22,
-    nutrients: {
-      fiber:     { val: 8.5,  unit: 'g',   dv: 28,   label: 'Fiber',       icon: '🌾', color: '#a3e635' },
-      omega3:    { val: 4.9,  unit: 'g',   dv: 1.6,  label: 'Omega-3 ALA', icon: '🐟', color: '#38bdf8' },
-      magnesium: { val: 160,  unit: 'mg',  dv: 420,  label: 'Magnesium',   icon: '⚡', color: '#c084fc' },
-      zinc:      { val: 4.1,  unit: 'mg',  dv: 11,   label: 'Zinc',        icon: '🛡️', color: '#4ade80' },
-      calcium:   { val: 277,  unit: 'mg',  dv: 1300, label: 'Calcium',     icon: '🦴', color: '#fb923c' },
-      iron:      { val: 3.4,  unit: 'mg',  dv: 18,   label: 'Iron',        icon: '🩸', color: '#f87171' },
-      potassium: { val: 888,  unit: 'mg',  dv: 4700, label: 'Potassium',   icon: '🍌', color: '#fbbf24' },
-      vitB12:    { val: 1.2,  unit: 'mcg', dv: 2.4,  label: 'Vitamin B12', icon: '🔋', color: '#34d399' },
-      vitC:      { val: 18.3, unit: 'mg',  dv: 90,   label: 'Vitamin C',   icon: '🍊', color: '#f97316' },
-      vitE:      { val: 2.3,  unit: 'mg',  dv: 15,   label: 'Vitamin E',   icon: '🌻', color: '#facc15' },
-      folate:    { val: 77,   unit: 'mcg', dv: 400,  label: 'Folate (B9)', icon: '🧬', color: '#a78bfa' },
+  // All macros & micros from USDA FoodData Central
+  const DAILY_DEFAULTS = [
+    {
+      id: 'smoothie',
+      name: 'Morning Protein Smoothie',
+      time: 'Morning',
+      calories: 453, protein: 38, carbs: 29, fat: 22,
+      // Per serving (÷6): egg whites 590g, Greek yogurt 907g, hemp 90g,
+      // flax 50g, chia 50g, nut butter 85g, wheat germ 30g, strawberries 152g, banana 225g
+      nutrients: {
+        fiber:     { val: 8.5,  unit: 'g',   dv: 28,   label: 'Fiber',       icon: '🌾', color: '#a3e635' },
+        omega3:    { val: 4.9,  unit: 'g',   dv: 1.6,  label: 'Omega-3',     icon: '🐟', color: '#38bdf8' },
+        magnesium: { val: 160,  unit: 'mg',  dv: 420,  label: 'Magnesium',   icon: '⚡', color: '#c084fc' },
+        zinc:      { val: 4.1,  unit: 'mg',  dv: 11,   label: 'Zinc',        icon: '🛡️', color: '#4ade80' },
+        calcium:   { val: 277,  unit: 'mg',  dv: 1300, label: 'Calcium',     icon: '🦴', color: '#fb923c' },
+        iron:      { val: 3.4,  unit: 'mg',  dv: 18,   label: 'Iron',        icon: '🩸', color: '#f87171' },
+        potassium: { val: 888,  unit: 'mg',  dv: 4700, label: 'Potassium',   icon: '🍌', color: '#fbbf24' },
+        vitB12:    { val: 1.2,  unit: 'mcg', dv: 2.4,  label: 'Vitamin B12', icon: '🔋', color: '#34d399' },
+        vitC:      { val: 18.3, unit: 'mg',  dv: 90,   label: 'Vitamin C',   icon: '🍊', color: '#f97316' },
+        vitE:      { val: 2.3,  unit: 'mg',  dv: 15,   label: 'Vitamin E',   icon: '🌻', color: '#facc15' },
+        folate:    { val: 77,   unit: 'mcg', dv: 400,  label: 'Folate (B9)', icon: '🧬', color: '#a78bfa' },
+      },
+      notes: 'Egg whites · Greek yogurt · hemp hearts · flax · chia · nut butter · wheat germ · strawberries · banana (1 of 6 servings)'
     },
-    notes: 'Egg whites · Greek yogurt · hemp hearts · flax · chia · nut butter · wheat germ · strawberries · banana (1 of 6 servings)'
-  };
+    {
+      id: 'breakfast-bar',
+      name: 'Breakfast Bar',
+      time: 'Morning',
+      calories: 308, protein: 13, carbs: 25, fat: 19,
+      // Per bar (÷30): oats 11g, nut butter 21g, Greek yogurt 32g,
+      // hemp 5.3g, chia 6.4g, pumpkin seeds 4.3g, raisins 9.9g, honey 1.4g
+      nutrients: {
+        fiber:     { val: 5.5,  unit: 'g',   dv: 28,   label: 'Fiber',       icon: '🌾', color: '#a3e635' },
+        omega3:    { val: 1.67, unit: 'g',   dv: 1.6,  label: 'Omega-3',     icon: '🐟', color: '#38bdf8' },
+        magnesium: { val: 113,  unit: 'mg',  dv: 420,  label: 'Magnesium',   icon: '⚡', color: '#c084fc' },
+        zinc:      { val: 2.3,  unit: 'mg',  dv: 11,   label: 'Zinc',        icon: '🛡️', color: '#4ade80' },
+        calcium:   { val: 106,  unit: 'mg',  dv: 1300, label: 'Calcium',     icon: '🦴', color: '#fb923c' },
+        iron:      { val: 2.36, unit: 'mg',  dv: 18,   label: 'Iron',        icon: '🩸', color: '#f87171' },
+        potassium: { val: 351,  unit: 'mg',  dv: 4700, label: 'Potassium',   icon: '🍌', color: '#fbbf24' },
+        vitB12:    { val: 0.24, unit: 'mcg', dv: 2.4,  label: 'Vitamin B12', icon: '🔋', color: '#34d399' },
+        vitE:      { val: 2.72, unit: 'mg',  dv: 15,   label: 'Vitamin E',   icon: '🌻', color: '#facc15' },
+        folate:    { val: 24,   unit: 'mcg', dv: 400,  label: 'Folate (B9)', icon: '🧬', color: '#a78bfa' },
+      },
+      notes: 'Oats · nut butter · Greek yogurt · hemp · chia · pumpkin seeds · raisins · honey (1 of 30 bars)'
+    }
+  ];
 
   let logData = { entries: [] };
   let goals = { cal: 2000, pro: 150, carb: 250, fat: 65 };
   let nutrientsOpen = false;
 
   function todayStr() { return new Date().toLocaleDateString('en-CA'); }
-
   function fmtDate(ds) {
     return new Date(ds + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
   }
@@ -407,18 +428,18 @@
     document.getElementById('nutrient-chevron').classList.toggle('open', nutrientsOpen);
   }
 
-  function isSmoothieSkipped(date) {
-    return JSON.parse(localStorage.getItem('smoothie_skips') || '[]').includes(date);
+  function getSkips(id) {
+    return JSON.parse(localStorage.getItem('skips_' + id) || '[]');
   }
-  function skipSmoothie(date) {
-    const s = JSON.parse(localStorage.getItem('smoothie_skips') || '[]');
+  function isSkipped(id, date) { return getSkips(id).includes(date); }
+  function skipDefault(id, date) {
+    const s = getSkips(id);
     if (!s.includes(date)) s.push(date);
-    localStorage.setItem('smoothie_skips', JSON.stringify(s));
+    localStorage.setItem('skips_' + id, JSON.stringify(s));
     render();
   }
-  function restoreSmoothie(date) {
-    let s = JSON.parse(localStorage.getItem('smoothie_skips') || '[]');
-    localStorage.setItem('smoothie_skips', JSON.stringify(s.filter(d => d !== date)));
+  function restoreDefault(id, date) {
+    localStorage.setItem('skips_' + id, JSON.stringify(getSkips(id).filter(d => d !== date)));
     render();
   }
 
@@ -452,33 +473,53 @@
   }
 
   function getEffectiveEntries(date) {
+    const defaults = DAILY_DEFAULTS
+      .filter(d => !isSkipped(d.id, date))
+      .map(d => ({ ...d, date, _isDefault: true }));
     const logged = logData.entries.filter(e => e.date === date);
-    if (!isSmoothieSkipped(date)) {
-      return [{ ...SMOOTHIE, date, time: 'Morning', _isDefault: true }, ...logged];
-    }
-    return logged;
+    return [...defaults, ...logged];
   }
 
   function sumEntries(entries) {
     return entries.reduce((a, e) => ({
-      cal:  a.cal  + (e.calories || 0),
-      pro:  a.pro  + (e.protein  || 0),
-      carb: a.carb + (e.carbs    || 0),
-      fat:  a.fat  + (e.fat      || 0),
+      cal:  Math.round(a.cal  + (e.calories || 0)),
+      pro:  Math.round(a.pro  + (e.protein  || 0)),
+      carb: Math.round(a.carb + (e.carbs    || 0)),
+      fat:  Math.round(a.fat  + (e.fat      || 0)),
     }), { cal: 0, pro: 0, carb: 0, fat: 0 });
   }
 
   function pct(val, goal) { return Math.min(100, Math.round((val / goal) * 100)); }
 
   function renderNutrients(entries) {
-    const hasSmoothie = entries.some(e => e._isDefault);
+    const activeDefaults = entries.filter(e => e._isDefault && e.nutrients);
     const panel = document.getElementById('nutrient-panel');
-    if (!hasSmoothie) { panel.style.display = 'none'; return; }
-
+    if (activeDefaults.length === 0) { panel.style.display = 'none'; return; }
     panel.style.display = 'block';
-    document.getElementById('nutrient-panel-sub').textContent = 'Includes smoothie contribution';
 
-    const rows = Object.entries(SMOOTHIE.nutrients).map(([key, n]) => {
+    // Combine nutrients across all active defaults
+    const nutKeys = Object.keys(DAILY_DEFAULTS[0].nutrients);
+    const combined = {};
+    nutKeys.forEach(k => {
+      const meta = DAILY_DEFAULTS[0].nutrients[k]; // get unit/dv/label/icon/color
+      let total = 0;
+      activeDefaults.forEach(d => { if (d.nutrients && d.nutrients[k]) total += d.nutrients[k].val; });
+      combined[k] = { ...meta, val: Math.round(total * 10) / 10 };
+    });
+    // Also pick up any keys only in bar
+    Object.keys(DAILY_DEFAULTS[1].nutrients).forEach(k => {
+      if (!combined[k]) {
+        const meta = DAILY_DEFAULTS[1].nutrients[k];
+        let total = 0;
+        activeDefaults.forEach(d => { if (d.nutrients && d.nutrients[k]) total += d.nutrients[k].val; });
+        combined[k] = { ...meta, val: Math.round(total * 10) / 10 };
+      }
+    });
+
+    const subNames = activeDefaults.map(d => d.name).join(' + ');
+    document.getElementById('nutrient-panel-sub').textContent = subNames;
+
+    const rows = Object.entries(combined).map(([key, n]) => {
       const dvPct = Math.round((n.val / n.dv) * 100);
       const fillW = Math.min(100, dvPct);
       const dvClass = dvPct >= 20 ? 'dv-high' : dvPct >= 10 ? 'dv-med' : 'dv-low';
@@ -494,7 +535,6 @@
         <div class="nutrient-dv ${dvClass}">${dvPct}%</div>
       </div>`;
     }).join('');
-
     document.getElementById('nutrient-rows').innerHTML = rows;
   }
 
@@ -502,7 +542,6 @@
     const today = todayStr();
     const entries = getEffectiveEntries(today);
     const totals  = sumEntries(entries);
-    const skipped = isSmoothieSkipped(today);
 
     document.getElementById('today-date').textContent =
       new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
@@ -510,15 +549,12 @@
     document.getElementById('cal-val').textContent      = totals.cal;
     document.getElementById('cal-goal-sub').textContent = `of ${goals.cal} kcal goal`;
     document.getElementById('cal-bar').style.width      = pct(totals.cal, goals.cal) + '%';
-
     document.getElementById('pro-val').textContent      = totals.pro + 'g';
     document.getElementById('pro-goal-sub').textContent = `of ${goals.pro}g`;
     document.getElementById('pro-bar').style.width      = pct(totals.pro, goals.pro) + '%';
-
     document.getElementById('carb-val').textContent      = totals.carb + 'g';
     document.getElementById('carb-goal-sub').textContent = `of ${goals.carb}g`;
     document.getElementById('carb-bar').style.width      = pct(totals.carb, goals.carb) + '%';
-
     document.getElementById('fat-val').textContent      = totals.fat + 'g';
     document.getElementById('fat-goal-sub').textContent = `of ${goals.fat}g`;
     document.getElementById('fat-bar').style.width      = pct(totals.fat, goals.fat) + '%';
@@ -528,28 +564,29 @@
     const mealsEl = document.getElementById('today-meals');
     let html = '';
 
-    if (skipped) {
-      html += `<button class="restore-btn" onclick="restoreSmoothie('${today}')">＋ Add morning smoothie back</button>`;
-    }
+    // Restore buttons for skipped defaults
+    DAILY_DEFAULTS.forEach(def => {
+      if (isSkipped(def.id, today)) {
+        html += `<button class="restore-btn" onclick="restoreDefault('${def.id}','${today}')">＋ Add ${def.name} back</button>`;
+      }
+    });
 
     if (entries.length === 0) {
-      html += `<div class="empty-state">
-        <div class="emoji">📸</div>
-        <p>No meals logged today.<br>Send a food photo to Claude to add your first entry!</p>
-      </div>`;
+      html += `<div class="empty-state"><div class="emoji">📸</div>
+        <p>No meals logged today.<br>Send a food photo to Claude to add your first entry!</p></div>`;
     } else {
       html += entries.map(e => {
         const isDefault = e._isDefault;
         let microHtml = '';
         if (isDefault && e.nutrients) {
-          const top = ['omega3','magnesium','fiber','vitB12','zinc'];
-          const pills = top.map(k => {
+          const topKeys = Object.keys(e.nutrients).slice(0, 5);
+          const pills = topKeys.map(k => {
             const n = e.nutrients[k];
             const dvPct = Math.round((n.val / n.dv) * 100);
             return `<span class="micro-pill" style="background:${n.color}22;color:${n.color}">${n.icon} ${dvPct}% ${n.label}</span>`;
           }).join('');
           microHtml = `<div class="smoothie-nutrients">
-            <div class="smoothie-nutrients-title">Top nutrients per serving</div>
+            <div class="smoothie-nutrients-title">Top nutrients</div>
             <div class="smoothie-micro-pills">${pills}</div>
           </div>`;
         }
@@ -568,18 +605,16 @@
           </div>
           ${e.notes ? `<div class="meal-notes">${e.notes}</div>` : ''}
           ${microHtml}
-          ${isDefault ? `<button class="delete-btn" onclick="skipSmoothie('${today}')">✕ Skip today</button>` : ''}
+          ${isDefault ? `<button class="delete-btn" onclick="skipDefault('${e.id}','${today}')">✕ Skip today</button>` : ''}
         </div>`;
       }).join('');
     }
-
     mealsEl.innerHTML = html;
   }
 
   function renderHistory() {
     const today = todayStr();
     const byDay = {};
-
     for (let i = 1; i <= 60; i++) {
       const d = new Date(); d.setDate(d.getDate() - i);
       const key = d.toLocaleDateString('en-CA');
@@ -597,7 +632,6 @@
       const entries = key === today ? getEffectiveEntries(key) : (byDay[key] || []);
       last7.push({ label: d.toLocaleDateString('en-US', { weekday: 'short' }), cal: sumEntries(entries).cal, isToday: i === 0 });
     }
-
     const maxCal = Math.max(...last7.map(d => d.cal), goals.cal);
     document.getElementById('week-chart').innerHTML = last7.map(d => {
       const h = maxCal > 0 ? Math.round((d.cal / maxCal) * 90) : 2;
@@ -613,22 +647,21 @@
       histEl.innerHTML = `<div class="empty-state"><div class="emoji">📅</div><p>No history yet.</p></div>`;
       return;
     }
-
     histEl.innerHTML = pastDays.map(day => {
       const entries = byDay[day];
       const totals  = sumEntries(entries);
-      const hasSmoo = entries.some(e => e._isDefault);
+      const defCount = entries.filter(e => e._isDefault).length;
       return `<div class="day-card">
         <div class="day-card-header" onclick="toggleDay('${day}')">
           <div>
-            <div class="day-date">${fmtDate(day)}${hasSmoo ? '<span class="default-badge" style="font-size:.6rem">🥤</span>' : ''}</div>
+            <div class="day-date">${fmtDate(day)}${defCount > 0 ? `<span class="default-badge" style="font-size:.6rem">${defCount === 2 ? '🥤🍫' : '🥤'}</span>` : ''}</div>
             <div class="day-summary">${entries.length} item${entries.length !== 1 ? 's' : ''} · ${totals.pro}g P · ${totals.carb}g C · ${totals.fat}g F</div>
           </div>
           <div class="day-cal-badge">${totals.cal} kcal</div>
         </div>
         <div class="day-meals" id="day-${day}">
           ${entries.map(e => `<div class="day-meal-row">
-            <div class="day-meal-name">${e.name}${e._isDefault ? ' 🥤' : ''}</div>
+            <div class="day-meal-name">${e.name}${e._isDefault ? ' ✦' : ''}</div>
             <div class="day-meal-macros">${e.calories} kcal · ${e.protein}g P · ${e.carbs}g C · ${e.fat}g F${e.time ? ' · ' + e.time : ''}</div>
           </div>`).join('')}
         </div>
@@ -637,7 +670,6 @@
   }
 
   function toggleDay(day) { document.getElementById('day-' + day).classList.toggle('open'); }
-
   function render() { renderToday(); renderHistory(); }
 
   document.getElementById('header-date').textContent =
