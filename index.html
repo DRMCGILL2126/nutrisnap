@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="NutriSnap" />
+  <title>NutriSnap</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f0f13;
+      --card: #1a1a22;
+      --border: #2a2a36;
+      --accent: #6c63ff;
+      --accent2: #ff6584;
+      --text: #f0f0f5;
+      --muted: #888899;
+      --green: #4ade80;
+      --yellow: #facc15;
+      --orange: #fb923c;
+      --red: #f87171;
+      --cal-color: #6c63ff;
+      --pro-color: #4ade80;
+      --carb-color: #facc15;
+      --fat-color: #fb923c;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    }
+
+    header {
+      padding: 20px 20px 12px;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      background: var(--bg);
+      z-index: 10;
+    }
+
+    header h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.5px; }
+    header p { color: var(--muted); font-size: 0.85rem; margin-top: 2px; }
+
+    nav {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+      position: sticky;
+      top: 73px;
+      z-index: 9;
+    }
+
+    nav button {
+      flex: 1;
+      padding: 12px;
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+
+    nav button.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+
+    .tab { display: none; padding: 16px 20px 100px; }
+    .tab.active { display: block; }
+
+    .macro-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .macro-card {
+      background: var(--card);
+      border-radius: 14px;
+      padding: 14px;
+      border: 1px solid var(--border);
+    }
+
+    .macro-card.full { grid-column: 1 / -1; }
+
+    .macro-card .label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+
+    .macro-card .value {
+      font-size: 1.8rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .macro-card .sub {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .progress-bar {
+      height: 6px;
+      background: var(--border);
+      border-radius: 3px;
+      margin-top: 8px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.4s ease;
+    }
+
+    .cal { color: var(--cal-color); }
+    .pro { color: var(--pro-color); }
+    .carb { color: var(--carb-color); }
+    .fat { color: var(--fat-color); }
+
+    .fill-cal { background: var(--cal-color); }
+    .fill-pro { background: var(--pro-color); }
+    .fill-carb { background: var(--carb-color); }
+    .fill-fat { background: var(--fat-color); }
+
+    .section-title {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin: 20px 0 10px;
+    }
+
+    .meal-card {
+      background: var(--card);
+      border-radius: 14px;
+      padding: 14px;
+      border: 1px solid var(--border);
+      margin-bottom: 10px;
+    }
+
+    .meal-card .meal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+
+    .meal-card .meal-name { font-weight: 600; font-size: 0.95rem; }
+    .meal-card .meal-time { font-size: 0.75rem; color: var(--muted); }
+    .meal-card .meal-cal { font-size: 1.1rem; font-weight: 700; color: var(--cal-color); }
+
+    .macro-pills {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .macro-pill {
+      font-size: 0.75rem;
+      padding: 3px 8px;
+      border-radius: 20px;
+      font-weight: 500;
+    }
+
+    .pill-pro { background: rgba(74,222,128,0.15); color: var(--pro-color); }
+    .pill-carb { background: rgba(250,204,21,0.15); color: var(--yellow); }
+    .pill-fat { background: rgba(251,146,60,0.15); color: var(--orange); }
+
+    .meal-notes {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 8px;
+      font-style: italic;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--muted);
+    }
+
+    .empty-state .emoji { font-size: 2.5rem; margin-bottom: 10px; }
+    .empty-state p { font-size: 0.9rem; line-height: 1.5; }
+
+    /* Chart */
+    .chart-container {
+      background: var(--card);
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .chart-title { font-size: 0.85rem; font-weight: 600; margin-bottom: 14px; color: var(--muted); }
+
+    .bar-chart {
+      display: flex;
+      align-items: flex-end;
+      gap: 6px;
+      height: 100px;
+    }
+
+    .bar-group {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .bar {
+      width: 100%;
+      border-radius: 4px 4px 0 0;
+      min-height: 2px;
+      transition: height 0.4s ease;
+    }
+
+    .bar-label {
+      font-size: 0.65rem;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    /* History tab */
+    .day-card {
+      background: var(--card);
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+
+    .day-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px;
+      cursor: pointer;
+    }
+
+    .day-date { font-weight: 600; }
+    .day-summary { font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
+    .day-cal-badge {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--cal-color);
+    }
+
+    .day-meals {
+      border-top: 1px solid var(--border);
+      display: none;
+    }
+
+    .day-meals.open { display: block; }
+
+    .day-meal-row {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.85rem;
+    }
+
+    .day-meal-row:last-child { border-bottom: none; }
+
+    .day-meal-name { font-weight: 500; }
+    .day-meal-macros { color: var(--muted); font-size: 0.78rem; margin-top: 2px; }
+
+    /* Goals tab */
+    .goal-row {
+      background: var(--card);
+      border-radius: 14px;
+      padding: 14px;
+      border: 1px solid var(--border);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .goal-label { flex: 1; font-size: 0.9rem; }
+    .goal-input {
+      width: 80px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 0.9rem;
+      padding: 6px 10px;
+      text-align: center;
+    }
+
+    .save-goals-btn {
+      width: 100%;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 14px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+
+    .badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      padding: 2px 7px;
+      border-radius: 10px;
+      font-weight: 600;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+
+    .badge-ok { background: rgba(74,222,128,0.2); color: var(--green); }
+    .badge-over { background: rgba(248,113,113,0.2); color: var(--red); }
+    .badge-low { background: rgba(250,204,21,0.2); color: var(--yellow); }
+
+    .today-date-line {
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+
+    .refresh-btn {
+      display: block;
+      width: 100%;
+      background: var(--card);
+      color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🥗 NutriSnap</h1>
+  <p id="header-date">Loading...</p>
+</header>
+
+<nav>
+  <button class="active" onclick="showTab('today')">Today</button>
+  <button onclick="showTab('history')">History</button>
+  <button onclick="showTab('goals')">Goals</button>
+</nav>
+
+<div id="today" class="tab active">
+  <div class="today-date-line" id="today-date"></div>
+
+  <button class="refresh-btn" onclick="loadData()">↻ Refresh</button>
+
+  <div class="macro-grid">
+    <div class="macro-card full">
+      <div class="label">Calories</div>
+      <div class="value cal" id="cal-val">—</div>
+      <div class="sub" id="cal-goal-sub"></div>
+      <div class="progress-bar"><div class="progress-fill fill-cal" id="cal-bar" style="width:0%"></div></div>
+    </div>
+    <div class="macro-card">
+      <div class="label">Protein</div>
+      <div class="value pro" id="pro-val">—</div>
+      <div class="sub" id="pro-goal-sub"></div>
+      <div class="progress-bar"><div class="progress-fill fill-pro" id="pro-bar" style="width:0%"></div></div>
+    </div>
+    <div class="macro-card">
+      <div class="label">Carbs</div>
+      <div class="value carb" id="carb-val">—</div>
+      <div class="sub" id="carb-goal-sub"></div>
+      <div class="progress-bar"><div class="progress-fill fill-carb" id="carb-bar" style="width:0%"></div></div>
+    </div>
+    <div class="macro-card full">
+      <div class="label">Fat</div>
+      <div class="value fat" id="fat-val">—</div>
+      <div class="sub" id="fat-goal-sub"></div>
+      <div class="progress-bar"><div class="progress-fill fill-fat" id="fat-bar" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <div class="section-title">Today's Meals</div>
+  <div id="today-meals"></div>
+</div>
+
+<div id="history" class="tab">
+  <div class="chart-container">
+    <div class="chart-title">7-Day Calories</div>
+    <div class="bar-chart" id="week-chart"></div>
+  </div>
+  <div class="section-title">Past Days</div>
+  <div id="history-list"></div>
+</div>
+
+<div id="goals" class="tab">
+  <div class="section-title">Daily Goals</div>
+  <div class="goal-row">
+    <div class="goal-label">🔥 Calories (kcal)</div>
+    <input class="goal-input" id="g-cal" type="number" />
+  </div>
+  <div class="goal-row">
+    <div class="goal-label">💪 Protein (g)</div>
+    <input class="goal-input" id="g-pro" type="number" />
+  </div>
+  <div class="goal-row">
+    <div class="goal-label">🍞 Carbs (g)</div>
+    <input class="goal-input" id="g-carb" type="number" />
+  </div>
+  <div class="goal-row">
+    <div class="goal-label">🥑 Fat (g)</div>
+    <input class="goal-input" id="g-fat" type="number" />
+  </div>
+  <button class="save-goals-btn" onclick="saveGoals()">Save Goals</button>
+</div>
+
+<script>
+  const REPO_OWNER = 'drmcgill2126';
+  const REPO_NAME = 'nutrisnap';
+  const LOG_FILE = 'log.json';
+  const RAW_URL = `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/${LOG_FILE}`;
+
+  let logData = { entries: [] };
+  let goals = { cal: 2000, pro: 150, carb: 250, fat: 65 };
+
+  function todayStr() {
+    return new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+  }
+
+  function fmtDate(dateStr) {
+    const d = new Date(dateStr + 'T12:00:00');
+    return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  }
+
+  function showTab(name) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+    document.getElementById(name).classList.add('active');
+    event.target.classList.add('active');
+  }
+
+  function loadGoals() {
+    const saved = localStorage.getItem('nutrisnap_goals');
+    if (saved) goals = JSON.parse(saved);
+    document.getElementById('g-cal').value = goals.cal;
+    document.getElementById('g-pro').value = goals.pro;
+    document.getElementById('g-carb').value = goals.carb;
+    document.getElementById('g-fat').value = goals.fat;
+  }
+
+  function saveGoals() {
+    goals = {
+      cal: +document.getElementById('g-cal').value || 2000,
+      pro: +document.getElementById('g-pro').value || 150,
+      carb: +document.getElementById('g-carb').value || 250,
+      fat: +document.getElementById('g-fat').value || 65,
+    };
+    localStorage.setItem('nutrisnap_goals', JSON.stringify(goals));
+    renderToday();
+    alert('Goals saved!');
+  }
+
+  async function loadData() {
+    try {
+      const res = await fetch(RAW_URL + '?t=' + Date.now());
+      if (res.ok) {
+        logData = await res.json();
+      }
+    } catch(e) {
+      console.error('Could not load log:', e);
+    }
+    render();
+  }
+
+  function todayEntries() {
+    const t = todayStr();
+    return logData.entries.filter(e => e.date === t);
+  }
+
+  function sumEntries(entries) {
+    return entries.reduce((acc, e) => ({
+      cal: acc.cal + (e.calories || 0),
+      pro: acc.pro + (e.protein || 0),
+      carb: acc.carb + (e.carbs || 0),
+      fat: acc.fat + (e.fat || 0),
+    }), { cal: 0, pro: 0, carb: 0, fat: 0 });
+  }
+
+  function pct(val, goal) {
+    return Math.min(100, Math.round((val / goal) * 100));
+  }
+
+  function badgeFor(val, goal) {
+    const p = val / goal;
+    if (p >= 0.95 && p <= 1.1) return '<span class="badge badge-ok">✓</span>';
+    if (p > 1.1) return '<span class="badge badge-over">Over</span>';
+    return '';
+  }
+
+  function renderToday() {
+    const entries = todayEntries();
+    const totals = sumEntries(entries);
+    const today = new Date();
+    document.getElementById('today-date').textContent =
+      today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+
+    document.getElementById('cal-val').textContent = totals.cal;
+    document.getElementById('cal-goal-sub').textContent = `of ${goals.cal} kcal goal`;
+    document.getElementById('cal-bar').style.width = pct(totals.cal, goals.cal) + '%';
+
+    document.getElementById('pro-val').textContent = totals.pro + 'g';
+    document.getElementById('pro-goal-sub').textContent = `of ${goals.pro}g`;
+    document.getElementById('pro-bar').style.width = pct(totals.pro, goals.pro) + '%';
+
+    document.getElementById('carb-val').textContent = totals.carb + 'g';
+    document.getElementById('carb-goal-sub').textContent = `of ${goals.carb}g`;
+    document.getElementById('carb-bar').style.width = pct(totals.carb, goals.carb) + '%';
+
+    document.getElementById('fat-val').textContent = totals.fat + 'g';
+    document.getElementById('fat-goal-sub').textContent = `of ${goals.fat}g`;
+    document.getElementById('fat-bar').style.width = pct(totals.fat, goals.fat) + '%';
+
+    const mealsEl = document.getElementById('today-meals');
+    if (entries.length === 0) {
+      mealsEl.innerHTML = `<div class="empty-state">
+        <div class="emoji">📸</div>
+        <p>No meals logged today.<br>Send a food photo to Claude to add your first entry!</p>
+      </div>`;
+      return;
+    }
+
+    mealsEl.innerHTML = entries.map(e => `
+      <div class="meal-card">
+        <div class="meal-header">
+          <div>
+            <div class="meal-name">${e.name}</div>
+            <div class="meal-time">${e.time || ''}</div>
+          </div>
+          <div class="meal-cal">${e.calories} kcal</div>
+        </div>
+        <div class="macro-pills">
+          <span class="macro-pill pill-pro">💪 ${e.protein}g protein</span>
+          <span class="macro-pill pill-carb">🍞 ${e.carbs}g carbs</span>
+          <span class="macro-pill pill-fat">🥑 ${e.fat}g fat</span>
+        </div>
+        ${e.notes ? `<div class="meal-notes">${e.notes}</div>` : ''}
+      </div>
+    `).join('');
+  }
+
+  function renderHistory() {
+    const byDay = {};
+    logData.entries.forEach(e => {
+      if (!byDay[e.date]) byDay[e.date] = [];
+      byDay[e.date].push(e);
+    });
+
+    const days = Object.keys(byDay).sort().reverse();
+    const todayKey = todayStr();
+
+    // 7-day chart
+    const last7 = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const key = d.toLocaleDateString('en-CA');
+      const entries = byDay[key] || [];
+      const totals = sumEntries(entries);
+      last7.push({ label: d.toLocaleDateString('en-US', { weekday: 'short' }), cal: totals.cal, isToday: i === 0 });
+    }
+
+    const maxCal = Math.max(...last7.map(d => d.cal), goals.cal);
+    const chartEl = document.getElementById('week-chart');
+    chartEl.innerHTML = last7.map(d => {
+      const h = maxCal > 0 ? Math.round((d.cal / maxCal) * 90) : 2;
+      const color = d.isToday ? 'var(--accent)' : 'var(--border)';
+      return `<div class="bar-group">
+        <div class="bar" style="height:${h}px; background:${color}"></div>
+        <div class="bar-label">${d.label}</div>
+      </div>`;
+    }).join('');
+
+    const histEl = document.getElementById('history-list');
+    const pastDays = days.filter(d => d !== todayKey);
+    if (pastDays.length === 0) {
+      histEl.innerHTML = `<div class="empty-state"><div class="emoji">📅</div><p>No history yet. Start logging meals!</p></div>`;
+      return;
+    }
+
+    histEl.innerHTML = pastDays.map(day => {
+      const entries = byDay[day];
+      const totals = sumEntries(entries);
+      return `<div class="day-card">
+        <div class="day-card-header" onclick="toggleDay('${day}')">
+          <div>
+            <div class="day-date">${fmtDate(day)}</div>
+            <div class="day-summary">${entries.length} meal${entries.length !== 1 ? 's' : ''} · ${totals.pro}g pro · ${totals.carb}g carb · ${totals.fat}g fat</div>
+          </div>
+          <div class="day-cal-badge">${totals.cal} kcal</div>
+        </div>
+        <div class="day-meals" id="day-${day}">
+          ${entries.map(e => `<div class="day-meal-row">
+            <div class="day-meal-name">${e.name}</div>
+            <div class="day-meal-macros">${e.calories} kcal · ${e.protein}g P · ${e.carbs}g C · ${e.fat}g F${e.time ? ' · ' + e.time : ''}</div>
+          </div>`).join('')}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function toggleDay(day) {
+    const el = document.getElementById('day-' + day);
+    el.classList.toggle('open');
+  }
+
+  function render() {
+    renderToday();
+    renderHistory();
+  }
+
+  document.getElementById('header-date').textContent =
+    new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+
+  loadGoals();
+  loadData();
+</script>
+</body>
+</html>
