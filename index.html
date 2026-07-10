@@ -155,6 +155,11 @@
       margin-bottom: 10px;
     }
 
+    .meal-card.default-meal {
+      border-color: rgba(108,99,255,0.4);
+      background: rgba(108,99,255,0.07);
+    }
+
     .meal-card .meal-header {
       display: flex;
       justify-content: space-between;
@@ -190,6 +195,44 @@
       font-style: italic;
     }
 
+    .delete-btn {
+      background: rgba(248,113,113,0.15);
+      color: var(--red);
+      border: none;
+      border-radius: 8px;
+      padding: 4px 10px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    .restore-btn {
+      width: 100%;
+      background: rgba(108,99,255,0.15);
+      color: var(--accent);
+      border: 1px dashed rgba(108,99,255,0.4);
+      border-radius: 12px;
+      padding: 12px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+
+    .default-badge {
+      display: inline-block;
+      font-size: 0.65rem;
+      padding: 2px 6px;
+      border-radius: 8px;
+      background: rgba(108,99,255,0.25);
+      color: var(--accent);
+      font-weight: 600;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+
     .empty-state {
       text-align: center;
       padding: 40px 20px;
@@ -199,7 +242,6 @@
     .empty-state .emoji { font-size: 2.5rem; margin-bottom: 10px; }
     .empty-state p { font-size: 0.9rem; line-height: 1.5; }
 
-    /* Chart */
     .chart-container {
       background: var(--card);
       border-radius: 14px;
@@ -238,7 +280,6 @@
       text-align: center;
     }
 
-    /* History tab */
     .day-card {
       background: var(--card);
       border-radius: 14px;
@@ -277,11 +318,9 @@
     }
 
     .day-meal-row:last-child { border-bottom: none; }
-
     .day-meal-name { font-weight: 500; }
     .day-meal-macros { color: var(--muted); font-size: 0.78rem; margin-top: 2px; }
 
-    /* Goals tab */
     .goal-row {
       background: var(--card);
       border-radius: 14px;
@@ -318,20 +357,6 @@
       margin-top: 8px;
     }
 
-    .badge {
-      display: inline-block;
-      font-size: 0.7rem;
-      padding: 2px 7px;
-      border-radius: 10px;
-      font-weight: 600;
-      margin-left: 6px;
-      vertical-align: middle;
-    }
-
-    .badge-ok { background: rgba(74,222,128,0.2); color: var(--green); }
-    .badge-over { background: rgba(248,113,113,0.2); color: var(--red); }
-    .badge-low { background: rgba(250,204,21,0.2); color: var(--yellow); }
-
     .today-date-line {
       text-align: center;
       font-size: 0.8rem;
@@ -362,14 +387,13 @@
 </header>
 
 <nav>
-  <button class="active" onclick="showTab('today')">Today</button>
-  <button onclick="showTab('history')">History</button>
-  <button onclick="showTab('goals')">Goals</button>
+  <button class="active" onclick="showTab('today', this)">Today</button>
+  <button onclick="showTab('history', this)">History</button>
+  <button onclick="showTab('goals', this)">Goals</button>
 </nav>
 
 <div id="today" class="tab active">
   <div class="today-date-line" id="today-date"></div>
-
   <button class="refresh-btn" onclick="loadData()">↻ Refresh</button>
 
   <div class="macro-grid">
@@ -439,11 +463,22 @@
   const LOG_FILE = 'log.json';
   const RAW_URL = `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/${LOG_FILE}`;
 
+  // Default smoothie — always included unless skipped for that day
+  const SMOOTHIE = {
+    id: 'default-smoothie',
+    name: 'Morning Protein Smoothie',
+    calories: 485,
+    protein: 40,
+    carbs: 31,
+    fat: 22,
+    notes: 'Egg whites, Greek yogurt, hemp hearts, flax, chia, nut butter, wheat germ, strawberries, banana (1 of 6 servings)'
+  };
+
   let logData = { entries: [] };
   let goals = { cal: 2000, pro: 150, carb: 250, fat: 65 };
 
   function todayStr() {
-    return new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+    return new Date().toLocaleDateString('en-CA');
   }
 
   function fmtDate(dateStr) {
@@ -451,11 +486,31 @@
     return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
   }
 
-  function showTab(name) {
+  function showTab(name, btn) {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
     document.getElementById(name).classList.add('active');
-    event.target.classList.add('active');
+    btn.classList.add('active');
+  }
+
+  // Smoothie skip state stored by date in localStorage
+  function isSmoothieSkipped(date) {
+    const skips = JSON.parse(localStorage.getItem('smoothie_skips') || '[]');
+    return skips.includes(date);
+  }
+
+  function skipSmoothie(date) {
+    const skips = JSON.parse(localStorage.getItem('smoothie_skips') || '[]');
+    if (!skips.includes(date)) skips.push(date);
+    localStorage.setItem('smoothie_skips', JSON.stringify(skips));
+    render();
+  }
+
+  function restoreSmoothie(date) {
+    let skips = JSON.parse(localStorage.getItem('smoothie_skips') || '[]');
+    skips = skips.filter(d => d !== date);
+    localStorage.setItem('smoothie_skips', JSON.stringify(skips));
+    render();
   }
 
   function loadGoals() {
@@ -482,18 +537,19 @@
   async function loadData() {
     try {
       const res = await fetch(RAW_URL + '?t=' + Date.now());
-      if (res.ok) {
-        logData = await res.json();
-      }
+      if (res.ok) logData = await res.json();
     } catch(e) {
       console.error('Could not load log:', e);
     }
     render();
   }
 
-  function todayEntries() {
-    const t = todayStr();
-    return logData.entries.filter(e => e.date === t);
+  function getEffectiveEntries(date) {
+    const logged = logData.entries.filter(e => e.date === date);
+    if (!isSmoothieSkipped(date)) {
+      return [{ ...SMOOTHIE, date, time: 'Morning', _isDefault: true }, ...logged];
+    }
+    return logged;
   }
 
   function sumEntries(entries) {
@@ -509,19 +565,14 @@
     return Math.min(100, Math.round((val / goal) * 100));
   }
 
-  function badgeFor(val, goal) {
-    const p = val / goal;
-    if (p >= 0.95 && p <= 1.1) return '<span class="badge badge-ok">✓</span>';
-    if (p > 1.1) return '<span class="badge badge-over">Over</span>';
-    return '';
-  }
-
   function renderToday() {
-    const entries = todayEntries();
+    const today = todayStr();
+    const entries = getEffectiveEntries(today);
     const totals = sumEntries(entries);
-    const today = new Date();
+    const skipped = isSmoothieSkipped(today);
+
     document.getElementById('today-date').textContent =
-      today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+      new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 
     document.getElementById('cal-val').textContent = totals.cal;
     document.getElementById('cal-goal-sub').textContent = `of ${goals.cal} kcal goal`;
@@ -540,42 +591,61 @@
     document.getElementById('fat-bar').style.width = pct(totals.fat, goals.fat) + '%';
 
     const mealsEl = document.getElementById('today-meals');
+    let html = '';
+
+    if (skipped) {
+      html += `<button class="restore-btn" onclick="restoreSmoothie('${today}')">＋ Add morning smoothie back</button>`;
+    }
+
     if (entries.length === 0) {
-      mealsEl.innerHTML = `<div class="empty-state">
+      html += `<div class="empty-state">
         <div class="emoji">📸</div>
         <p>No meals logged today.<br>Send a food photo to Claude to add your first entry!</p>
       </div>`;
-      return;
+    } else {
+      html += entries.map(e => {
+        const isDefault = e._isDefault;
+        return `<div class="meal-card${isDefault ? ' default-meal' : ''}">
+          <div class="meal-header">
+            <div>
+              <div class="meal-name">${e.name}${isDefault ? '<span class="default-badge">daily</span>' : ''}</div>
+              <div class="meal-time">${e.time || ''}</div>
+            </div>
+            <div class="meal-cal">${e.calories} kcal</div>
+          </div>
+          <div class="macro-pills">
+            <span class="macro-pill pill-pro">💪 ${e.protein}g protein</span>
+            <span class="macro-pill pill-carb">🍞 ${e.carbs}g carbs</span>
+            <span class="macro-pill pill-fat">🥑 ${e.fat}g fat</span>
+          </div>
+          ${e.notes ? `<div class="meal-notes">${e.notes}</div>` : ''}
+          ${isDefault ? `<button class="delete-btn" onclick="skipSmoothie('${today}')">✕ Skip today</button>` : ''}
+        </div>`;
+      }).join('');
     }
 
-    mealsEl.innerHTML = entries.map(e => `
-      <div class="meal-card">
-        <div class="meal-header">
-          <div>
-            <div class="meal-name">${e.name}</div>
-            <div class="meal-time">${e.time || ''}</div>
-          </div>
-          <div class="meal-cal">${e.calories} kcal</div>
-        </div>
-        <div class="macro-pills">
-          <span class="macro-pill pill-pro">💪 ${e.protein}g protein</span>
-          <span class="macro-pill pill-carb">🍞 ${e.carbs}g carbs</span>
-          <span class="macro-pill pill-fat">🥑 ${e.fat}g fat</span>
-        </div>
-        ${e.notes ? `<div class="meal-notes">${e.notes}</div>` : ''}
-      </div>
-    `).join('');
+    mealsEl.innerHTML = html;
   }
 
   function renderHistory() {
     const byDay = {};
-    logData.entries.forEach(e => {
-      if (!byDay[e.date]) byDay[e.date] = [];
-      byDay[e.date].push(e);
-    });
+    const today = todayStr();
 
-    const days = Object.keys(byDay).sort().reverse();
-    const todayKey = todayStr();
+    // Build last 30 days worth of effective entries for history
+    for (let i = 1; i <= 30; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const key = d.toLocaleDateString('en-CA');
+      const entries = getEffectiveEntries(key);
+      if (entries.length > 0) byDay[key] = entries;
+    }
+
+    // Also include any logged entries beyond 30 days
+    logData.entries.forEach(e => {
+      if (e.date !== today && !byDay[e.date]) {
+        byDay[e.date] = getEffectiveEntries(e.date);
+      }
+    });
 
     // 7-day chart
     const last7 = [];
@@ -583,7 +653,7 @@
       const d = new Date();
       d.setDate(d.getDate() - i);
       const key = d.toLocaleDateString('en-CA');
-      const entries = byDay[key] || [];
+      const entries = key === today ? getEffectiveEntries(key) : (byDay[key] || []);
       const totals = sumEntries(entries);
       last7.push({ label: d.toLocaleDateString('en-US', { weekday: 'short' }), cal: totals.cal, isToday: i === 0 });
     }
@@ -599,8 +669,9 @@
       </div>`;
     }).join('');
 
+    const pastDays = Object.keys(byDay).sort().reverse();
     const histEl = document.getElementById('history-list');
-    const pastDays = days.filter(d => d !== todayKey);
+
     if (pastDays.length === 0) {
       histEl.innerHTML = `<div class="empty-state"><div class="emoji">📅</div><p>No history yet. Start logging meals!</p></div>`;
       return;
@@ -609,17 +680,18 @@
     histEl.innerHTML = pastDays.map(day => {
       const entries = byDay[day];
       const totals = sumEntries(entries);
+      const hasDefault = entries.some(e => e._isDefault);
       return `<div class="day-card">
         <div class="day-card-header" onclick="toggleDay('${day}')">
           <div>
-            <div class="day-date">${fmtDate(day)}</div>
-            <div class="day-summary">${entries.length} meal${entries.length !== 1 ? 's' : ''} · ${totals.pro}g pro · ${totals.carb}g carb · ${totals.fat}g fat</div>
+            <div class="day-date">${fmtDate(day)}${hasDefault ? '<span class="default-badge" style="font-size:0.6rem">🥤</span>' : ''}</div>
+            <div class="day-summary">${entries.length} item${entries.length !== 1 ? 's' : ''} · ${totals.pro}g pro · ${totals.carb}g carb · ${totals.fat}g fat</div>
           </div>
           <div class="day-cal-badge">${totals.cal} kcal</div>
         </div>
         <div class="day-meals" id="day-${day}">
           ${entries.map(e => `<div class="day-meal-row">
-            <div class="day-meal-name">${e.name}</div>
+            <div class="day-meal-name">${e.name}${e._isDefault ? ' 🥤' : ''}</div>
             <div class="day-meal-macros">${e.calories} kcal · ${e.protein}g P · ${e.carbs}g C · ${e.fat}g F${e.time ? ' · ' + e.time : ''}</div>
           </div>`).join('')}
         </div>
@@ -628,8 +700,7 @@
   }
 
   function toggleDay(day) {
-    const el = document.getElementById('day-' + day);
-    el.classList.toggle('open');
+    document.getElementById('day-' + day).classList.toggle('open');
   }
 
   function render() {
