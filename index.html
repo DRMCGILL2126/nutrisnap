@@ -359,27 +359,27 @@
   const REPO_NAME  = 'nutrisnap';
   const RAW_URL = `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/log.json`;
 
-  // Smoothie macros recalculated from USDA data, per 1-of-6 servings
+  // Macros & micros recalculated from USDA FoodData Central, per 1-of-6 servings
+  // Full batch: 2,717 cal · 231g protein · 173g carbs · 134g fat
   const SMOOTHIE = {
     id: 'default-smoothie',
     name: 'Morning Protein Smoothie',
-    calories: 420,
-    protein: 31,
-    carbs: 30,
-    fat: 21,
-    // Micronutrients (per serving)
+    calories: 453,
+    protein: 38,
+    carbs: 29,
+    fat: 22,
     nutrients: {
-      fiber:     { val: 8.2,  unit: 'g',   dv: 28,   label: 'Fiber',      icon: '🌾', color: '#a3e635' },
-      omega3:    { val: 3.9,  unit: 'g',   dv: 1.6,  label: 'Omega-3',    icon: '🐟', color: '#38bdf8' },
-      magnesium: { val: 176,  unit: 'mg',  dv: 420,  label: 'Magnesium',  icon: '⚡', color: '#c084fc' },
-      calcium:   { val: 312,  unit: 'mg',  dv: 1300, label: 'Calcium',    icon: '🦴', color: '#fb923c' },
-      iron:      { val: 3.1,  unit: 'mg',  dv: 18,   label: 'Iron',       icon: '🩸', color: '#f87171' },
-      zinc:      { val: 3.5,  unit: 'mg',  dv: 11,   label: 'Zinc',       icon: '🛡️', color: '#4ade80' },
-      potassium: { val: 721,  unit: 'mg',  dv: 4700, label: 'Potassium',  icon: '🍌', color: '#fbbf24' },
-      vitC:      { val: 18.8, unit: 'mg',  dv: 90,   label: 'Vitamin C',  icon: '🍊', color: '#f97316' },
-      vitE:      { val: 2.0,  unit: 'mg',  dv: 15,   label: 'Vitamin E',  icon: '🌻', color: '#facc15' },
-      vitB12:    { val: 1.1,  unit: 'mcg', dv: 2.4,  label: 'Vitamin B12',icon: '🔋', color: '#34d399' },
-      folate:    { val: 56,   unit: 'mcg', dv: 400,  label: 'Folate (B9)',icon: '🧬', color: '#a78bfa' },
+      fiber:     { val: 8.5,  unit: 'g',   dv: 28,   label: 'Fiber',       icon: '🌾', color: '#a3e635' },
+      omega3:    { val: 4.9,  unit: 'g',   dv: 1.6,  label: 'Omega-3 ALA', icon: '🐟', color: '#38bdf8' },
+      magnesium: { val: 160,  unit: 'mg',  dv: 420,  label: 'Magnesium',   icon: '⚡', color: '#c084fc' },
+      zinc:      { val: 4.1,  unit: 'mg',  dv: 11,   label: 'Zinc',        icon: '🛡️', color: '#4ade80' },
+      calcium:   { val: 277,  unit: 'mg',  dv: 1300, label: 'Calcium',     icon: '🦴', color: '#fb923c' },
+      iron:      { val: 3.4,  unit: 'mg',  dv: 18,   label: 'Iron',        icon: '🩸', color: '#f87171' },
+      potassium: { val: 888,  unit: 'mg',  dv: 4700, label: 'Potassium',   icon: '🍌', color: '#fbbf24' },
+      vitB12:    { val: 1.2,  unit: 'mcg', dv: 2.4,  label: 'Vitamin B12', icon: '🔋', color: '#34d399' },
+      vitC:      { val: 18.3, unit: 'mg',  dv: 90,   label: 'Vitamin C',   icon: '🍊', color: '#f97316' },
+      vitE:      { val: 2.3,  unit: 'mg',  dv: 15,   label: 'Vitamin E',   icon: '🌻', color: '#facc15' },
+      folate:    { val: 77,   unit: 'mcg', dv: 400,  label: 'Folate (B9)', icon: '🧬', color: '#a78bfa' },
     },
     notes: 'Egg whites · Greek yogurt · hemp hearts · flax · chia · nut butter · wheat germ · strawberries · banana (1 of 6 servings)'
   };
