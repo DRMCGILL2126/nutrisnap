@@ -352,6 +352,14 @@
     <input class="goal-input" id="g-fat" type="number" />
   </div>
   <button class="save-goals-btn" onclick="saveGoals()">Save Goals</button>
+
+  <div class="section-title" style="margin-top:28px">Settings</div>
+  <div class="goal-row" style="flex-direction:column;align-items:flex-start;gap:8px">
+    <div class="goal-label" style="font-size:0.85rem">🔑 GitHub Token</div>
+    <div style="font-size:0.75rem;color:var(--muted);line-height:1.4">Required for meal deletes to sync. Paste your token — saved only on this device.</div>
+    <input id="g-pat" type="password" placeholder="ghp_..." style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.85rem;padding:8px 12px;font-family:monospace" />
+    <button class="save-goals-btn" style="margin-top:4px" onclick="savePATFromInput()">Save Token</button>
+  </div>
 </div>
 
 <script>
@@ -450,6 +458,18 @@
     document.getElementById('g-pro').value = goals.pro;
     document.getElementById('g-carb').value = goals.carb;
     document.getElementById('g-fat').value = goals.fat;
+    const pat = getPAT();
+    const patEl = document.getElementById('g-pat');
+    if (patEl) patEl.value = pat ? '••••••••••••' + pat.slice(-4) : '';
+  }
+
+  function savePATFromInput() {
+    const val = document.getElementById('g-pat').value.trim();
+    if (val && !val.startsWith('•')) {
+      savePAT(val);
+      alert('Token saved! Meal deletes will now sync to GitHub.');
+      loadGoals();
+    }
   }
 
   function saveGoals() {
@@ -472,12 +492,47 @@
     render();
   }
 
+  const API_BASE = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/log.json`;
+
+  function getPAT() { try { return localStorage.getItem('gh_pat') || ''; } catch { return ''; } }
+  function savePAT(t) { try { localStorage.setItem('gh_pat', t); } catch {} }
+
+  function entryKey(e) { return e.date + '|' + e.name + '|' + (e.time || ''); }
+
   function getEffectiveEntries(date) {
     const defaults = DAILY_DEFAULTS
       .filter(d => !isSkipped(d.id, date))
       .map(d => ({ ...d, date, _isDefault: true }));
     const logged = logData.entries.filter(e => e.date === date);
     return [...defaults, ...logged];
+  }
+
+  async function deleteEntry(key) {
+    const pat = getPAT();
+    if (!pat) {
+      alert('Add your GitHub token in the Settings tab first so deletes sync to your log.');
+      showTab('goals', document.querySelectorAll('nav button')[2]);
+      return;
+    }
+    // Remove from in-memory log
+    logData.entries = logData.entries.filter(e => entryKey(e) !== key);
+    render(); // optimistic update
+
+    // Push to GitHub
+    try {
+      const metaRes = await fetch(API_BASE, { headers: { Authorization: 'token ' + pat } });
+      const meta = await metaRes.json();
+      const updated = btoa(unescape(encodeURIComponent(JSON.stringify(logData, null, 2))));
+      const res = await fetch(API_BASE, {
+        method: 'PUT',
+        headers: { Authorization: 'token ' + pat, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: 'Delete meal entry', content: updated, sha: meta.sha })
+      });
+      if (!res.ok) throw new Error(await res.text());
+    } catch(err) {
+      console.error('GitHub write failed:', err);
+      alert('Removed locally but GitHub sync failed. Try refreshing.');
+    }
   }
 
   function sumEntries(entries) {
@@ -605,7 +660,9 @@
           </div>
           ${e.notes ? `<div class="meal-notes">${e.notes}</div>` : ''}
           ${microHtml}
-          ${isDefault ? `<button class="delete-btn" onclick="skipDefault('${e.id}','${today}')">✕ Skip today</button>` : ''}
+          ${isDefault
+            ? `<button class="delete-btn" onclick="skipDefault('${e.id}','${today}')">✕ Skip today</button>`
+            : `<button class="delete-btn" onclick="deleteEntry('${entryKey(e)}')">✕ Remove</button>`}
         </div>`;
       }).join('');
     }
