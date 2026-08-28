@@ -240,6 +240,36 @@
       font-size: 0.95rem; font-weight: 600; cursor: pointer; margin-top: 8px;
     }
 
+    .add-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 14px; margin-bottom: 18px;
+    }
+    .add-card-head {
+      display: flex; align-items: center; justify-content: space-between;
+      cursor: pointer; user-select: none;
+    }
+    .add-card-title { font-size: 0.9rem; font-weight: 600; }
+    .add-card-chevron { color: var(--muted); font-size: 0.8rem; transition: transform 0.2s; }
+    .add-card-body { margin-top: 14px; }
+    .add-field { margin-bottom: 10px; }
+    .add-field label {
+      display: block; font-size: 0.7rem; text-transform: uppercase;
+      letter-spacing: 0.06em; color: var(--muted); margin-bottom: 5px;
+    }
+    .add-input {
+      width: 100%; background: var(--bg); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text); font-size: 0.9rem;
+      padding: 9px 12px; font-family: inherit; box-sizing: border-box;
+    }
+    .add-input:focus, .goal-input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+    .add-macro-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    .add-macro-grid .add-input { text-align: center; padding: 9px 4px; }
+    .add-status { font-size: 0.78rem; margin-top: 10px; min-height: 1em; }
+    .add-status.ok { color: var(--green); }
+    .add-status.err { color: var(--red); }
+    .add-status.busy { color: var(--muted); }
+    @media (prefers-reduced-motion: reduce) { .add-card-chevron { transition: none; } }
+
     .today-date-line { text-align: center; font-size: 0.8rem; color: var(--muted); margin-bottom: 14px; }
     .refresh-btn {
       display: block; width: 100%;
@@ -318,6 +348,44 @@
       <div class="nutrient-panel-chevron" id="nutrient-chevron">▼</div>
     </div>
     <div class="nutrient-rows" id="nutrient-rows"></div>
+  </div>
+
+  <div class="add-card">
+    <div class="add-card-head" onclick="toggleAddCard()">
+      <div class="add-card-title">➕ Add a meal</div>
+      <div class="add-card-chevron" id="add-chevron">▼</div>
+    </div>
+    <div class="add-card-body" id="add-card-body" style="display:none">
+      <div class="add-field">
+        <label for="a-name">What did you eat</label>
+        <input class="add-input" id="a-name" type="text" placeholder="Costco beef chili, 2 cups" />
+      </div>
+      <div class="add-field">
+        <label for="a-time">When</label>
+        <select class="add-input" id="a-time">
+          <option>Morning</option>
+          <option>Breakfast</option>
+          <option selected>Lunch</option>
+          <option>Snack</option>
+          <option>Dinner</option>
+        </select>
+      </div>
+      <div class="add-field">
+        <label>Calories / Protein / Carbs / Fat</label>
+        <div class="add-macro-grid">
+          <input class="add-input" id="a-cal" type="number" inputmode="numeric" placeholder="cal" />
+          <input class="add-input" id="a-pro" type="number" inputmode="numeric" placeholder="pro" />
+          <input class="add-input" id="a-carb" type="number" inputmode="numeric" placeholder="carb" />
+          <input class="add-input" id="a-fat" type="number" inputmode="numeric" placeholder="fat" />
+        </div>
+      </div>
+      <div class="add-field">
+        <label for="a-notes">Notes (optional)</label>
+        <input class="add-input" id="a-notes" type="text" placeholder="Kirkland tub, ~2 servings" />
+      </div>
+      <button class="save-goals-btn" id="a-submit" onclick="addEntry()">Add meal</button>
+      <div class="add-status" id="a-status"></div>
+    </div>
   </div>
 
   <div class="section-title">Today's Meals</div>
@@ -505,6 +573,92 @@
       .map(d => ({ ...d, date, _isDefault: true }));
     const logged = logData.entries.filter(e => e.date === date);
     return [...defaults, ...logged];
+  }
+
+  function toggleAddCard() {
+    const b = document.getElementById('add-card-body');
+    const c = document.getElementById('add-chevron');
+    const open = b.style.display !== 'none';
+    b.style.display = open ? 'none' : 'block';
+    c.style.transform = open ? 'rotate(0deg)' : 'rotate(180deg)';
+    if (!open) document.getElementById('a-name').focus();
+  }
+
+  function setAddStatus(msg, cls) {
+    const el = document.getElementById('a-status');
+    el.textContent = msg;
+    el.className = 'add-status' + (cls ? ' ' + cls : '');
+  }
+
+  // Commits the current logData to log.json. Re-reads the blob sha immediately
+  // before writing so a stale sha from another device doesn't clobber the file.
+  async function pushLog(pat, message) {
+    const metaRes = await fetch(API_BASE + '?t=' + Date.now(), {
+      headers: { Authorization: 'token ' + pat }
+    });
+    if (!metaRes.ok) throw new Error('Could not read log.json (' + metaRes.status + ')');
+    const meta = await metaRes.json();
+    const body = btoa(unescape(encodeURIComponent(JSON.stringify(logData, null, 2))));
+    const res = await fetch(API_BASE, {
+      method: 'PUT',
+      headers: { Authorization: 'token ' + pat, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: message, content: body, sha: meta.sha })
+    });
+    if (!res.ok) throw new Error('GitHub rejected the write (' + res.status + ')');
+    return res.json();
+  }
+
+  async function addEntry() {
+    const pat = getPAT();
+    if (!pat) {
+      setAddStatus('Add your GitHub token in the Goals tab first.', 'err');
+      showTab('goals', document.querySelectorAll('nav button')[2]);
+      return;
+    }
+    const name = document.getElementById('a-name').value.trim();
+    if (!name) { setAddStatus('Give the meal a name.', 'err'); return; }
+
+    const num = id => { const v = document.getElementById(id).value; return v === '' ? 0 : Math.round(+v); };
+    const entry = {
+      date: todayStr(),
+      name: name,
+      time: document.getElementById('a-time').value,
+      calories: num('a-cal'),
+      protein: num('a-pro'),
+      carbs: num('a-carb'),
+      fat: num('a-fat')
+    };
+    const notes = document.getElementById('a-notes').value.trim();
+    if (notes) entry.notes = notes;
+
+    const btn = document.getElementById('a-submit');
+    btn.disabled = true;
+    setAddStatus('Saving…', 'busy');
+
+    // Refresh from remote first so we append to the latest log, not a stale copy.
+    try {
+      const r = await fetch(RAW_URL + '?t=' + Date.now());
+      if (r.ok) logData = await r.json();
+    } catch (e) { /* offline read: fall through with what we have */ }
+
+    if (!logData || !Array.isArray(logData.entries)) logData = { entries: [] };
+    logData.entries.push(entry);
+    render();
+
+    try {
+      await pushLog(pat, 'Add ' + entry.name);
+      setAddStatus('Added ' + entry.name + '.', 'ok');
+      ['a-name', 'a-cal', 'a-pro', 'a-carb', 'a-fat', 'a-notes'].forEach(id => {
+        document.getElementById(id).value = '';
+      });
+      document.getElementById('a-name').focus();
+    } catch (err) {
+      logData.entries = logData.entries.filter(e => entryKey(e) !== entryKey(entry));
+      render();
+      setAddStatus(err.message + ' — the meal was not saved.', 'err');
+    } finally {
+      btn.disabled = false;
+    }
   }
 
   async function deleteEntry(key) {
